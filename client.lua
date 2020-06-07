@@ -1,3 +1,7 @@
+--- START OF CONFIGURATION
+local vehicles = "some,example,vehicle,models" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
+--- END OF CONFIGURATION
+
 local tesla = nil
 local tesla_blip = nil
 local tesla_pilot = false
@@ -15,15 +19,15 @@ local crash_ped_rr = nil
 TriggerEvent('chat:addSuggestion', '/tesla', 'Tesla car features', {{name="pilot|crash|dance|mark", help="Enable autopilot, crash-avoidance, Model-X Dance or mark your current vehicle as your Tesla."}})
 RegisterCommand("tesla", function(source, args)
 	if(args[1] == "mark") then
-		if(IsPedInAnyVehicle(GetPlayerPed(-1)) and GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) == GetPlayerPed(-1)) then
+		if(IsPedInAnyVehicle(GetPlayerPed(-1)) and GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) == GetPlayerPed(-1) and (vehicles:find(GetDisplayNameFromVehicleModel(GetEntityModel(GetVehiclePedIsIn(GetPlayerPed(-1), false)))) or vehicles == "")) then
 			tesla = GetVehiclePedIsIn(GetPlayerPed(-1), false)
 			minimap("This vehicle is now marked as your Tesla.\nIt can be controlled when you are not sitting in it.")
 			if(DoesBlipExist(tesla_blip)) then
 				RemoveBlip(tesla_blip)
 			end
 			tesla_blip = AddBlipForEntity(tesla)
-			SetBlipSprite(tesla_blip, 225)
-			SetBlipColour(tesla_blip, 75)
+			SetBlipSprite(tesla_blip, 79)
+			SetBlipColour(tesla_blip, 25)
 			BeginTextCommandSetBlipName("STRING")
       AddTextComponentString("Tesla")
 			EndTextCommandSetBlipName(tesla_blip)
@@ -36,10 +40,9 @@ RegisterCommand("tesla", function(source, args)
 			tesla_blip = nil
 		end
 	else
-		if(IsPedInAnyVehicle(GetPlayerPed(-1), false) and GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) == GetPlayerPed(-1)) then
+		if(IsPedInAnyVehicle(GetPlayerPed(-1), false) and GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) == GetPlayerPed(-1) and (vehicles:find(GetDisplayNameFromVehicleModel(GetEntityModel(GetVehiclePedIsIn(GetPlayerPed(-1), false)))) or vehicles == "")) then
 			if(args[1] == "pilot") then
 				waypoint = Citizen.InvokeNative(0xFA7C7F0AADF25D09, GetFirstBlipInfoId(8), Citizen.ResultAsVector())
-				print(waypoint)
 				if(IsWaypointActive()) then
 					if(pilot) then
 						pilot = false
@@ -69,6 +72,11 @@ RegisterCommand("tesla", function(source, args)
 										SetVehicleForwardSpeed(GetVehiclePedIsIn(GetPlayerPed(-1), 0), GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), 0)) - 1.0)
 										Wait(100)
 									end
+									pilot = false
+									ClearPedTasks(GetPlayerPed(-1))
+									minimap("Auto-Pilot deactivated.")
+								end
+								if(IsControlPressed(27, 63) or IsControlPressed(27, 64) or IsControlPressed(27, 71) or IsControlPressed(27, 72) or IsControlPressed(27, 76)) then
 									pilot = false
 									ClearPedTasks(GetPlayerPed(-1))
 									minimap("Auto-Pilot deactivated.")

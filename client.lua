@@ -1,5 +1,5 @@
 --- START OF CONFIGURATION
-local vehicles = "some,example,vehicle,models" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
+local vehicles = "modelx, models, model3, modely, roadster, cybertruck, semi" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
 --- END OF CONFIGURATION
 
 local tesla = nil

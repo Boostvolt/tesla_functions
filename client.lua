@@ -1,5 +1,6 @@
 --- START OF CONFIGURATION
-local vehicles = "modelx, models, model3, modely, roadster, cybertruck, semi" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
+local vehicles = "ast,some,example,vehicle,models" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
+local debug = true
 --- END OF CONFIGURATION
 
 local tesla = nil
@@ -9,25 +10,23 @@ local tesla_pilot_ped = nil
 local tesla_dance = false
 
 local pilot = false
+local lines = false
 local crash = false
 local dance = false
-local crash_ped_fl = nil
-local crash_ped_fr = nil
-local crash_ped_rl = nil
-local crash_ped_rr = nil
 
-TriggerEvent('chat:addSuggestion', '/tesla', 'Tesla car features', {{name="pilot|crash|dance|mark", help="Enable autopilot, crash-avoidance, Model-X Dance or mark your current vehicle as your Tesla."}})
+TriggerEvent('chat:addSuggestion', '/tesla', 'Tesla car features', {{name="pilot|lines|crash|dance|mark", help="Enable autopilot, reverse lines, crash-avoidance, Model-X Dance or mark your current vehicle as your Tesla."}})
 RegisterCommand("tesla", function(source, args)
 	if(args[1] == "mark") then
 		if(IsPedInAnyVehicle(GetPlayerPed(-1)) and GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) == GetPlayerPed(-1) and (vehicles:find(GetDisplayNameFromVehicleModel(GetEntityModel(GetVehiclePedIsIn(GetPlayerPed(-1), false)))) or vehicles == "")) then
 			tesla = GetVehiclePedIsIn(GetPlayerPed(-1), false)
+			SetEntityAsMissionEntity(tesla, true, true)
 			minimap("This vehicle is now marked as your Tesla.\nIt can be controlled when you are not sitting in it.")
 			if(DoesBlipExist(tesla_blip)) then
 				RemoveBlip(tesla_blip)
 			end
 			tesla_blip = AddBlipForEntity(tesla)
-			SetBlipSprite(tesla_blip, 225)
-			SetBlipColour(tesla_blip, 75)
+			SetBlipSprite(tesla_blip, 79)
+			SetBlipColour(tesla_blip, 25)
 			BeginTextCommandSetBlipName("STRING")
       AddTextComponentString("Tesla")
 			EndTextCommandSetBlipName(tesla_blip)
@@ -52,14 +51,6 @@ RegisterCommand("tesla", function(source, args)
 						if(crash) then
 							crash = false
 							minimap("Crash-Avoidance deactivated.")
-							--DeletePed(crash_ped_fl)
-							DeleteEntity(crash_ped_fl)
-							--DeletePed(crash_ped_fr)
-							DeleteEntity(crash_ped_fr)
-							--DeletePed(crash_ped_front)
-							DeleteEntity(crash_ped_front)
-							--DeletePed(crash_ped_rear)
-							DeleteEntity(crash_ped_rear)
 						end
 						pilot = true
 						minimap("Auto-Pilot activated.")
@@ -91,16 +82,12 @@ RegisterCommand("tesla", function(source, args)
 				if(crash) then
 					crash = false
 					minimap("Crash-Avoidance deactivated.")
-					--DeletePed(crash_ped_fl)
-					DeleteEntity(crash_ped_fl)
-					--DeletePed(crash_ped_fr)
-					DeleteEntity(crash_ped_fr)
-					--DeletePed(crash_ped_front)
-					DeleteEntity(crash_ped_front)
-					--DeletePed(crash_ped_rear)
-					DeleteEntity(crash_ped_rear)
 				elseif(pilot) then
-					minimap("Crash-Avoidance is disabled.")
+					pilot = false
+					ClearPedTasks(GetPlayerPed(-1))
+					minimap("Auto-Pilot deactivated.")
+					crash = true
+					minimap("Crash-Avoidance activated.")
 				else
 					RequestModel(225514697)
 					while not HasModelLoaded(225514697) do
@@ -108,125 +95,241 @@ RegisterCommand("tesla", function(source, args)
 					end
 					crash = true
 					minimap("Crash-Avoidance activated.")
-					crash_ped_fl = CreatePed(0, 225514697, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["x"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["y"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["z"], 0.0, false, true)
-					SetEntityInvincible(crash_ped_fl, true)
-					SetEntityVisible(crash_ped_fl, false, 0)
-					crash_ped_fr = CreatePed(0, 225514697, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["x"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["y"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["z"], 0.0, false, true)
-					SetEntityInvincible(crash_ped_fr, true)
-					SetEntityVisible(crash_ped_fr, false, 0)
-					crash_ped_front = CreatePed(0, 225514697, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["x"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["y"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["z"], 0.0, false, true)
-					SetEntityInvincible(crash_ped_front, true)
-					SetEntityVisible(crash_ped_front, false, 0)
-					crash_ped_rear = CreatePed(0, 225514697, GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["x"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["y"], GetEntityCoords(GetVehiclePedIsIn(GetPlayerPed(-1), 0))["z"], 0.0, false, true)
-					SetEntityInvincible(crash_ped_rear, true)
-					SetEntityVisible(crash_ped_rear, false, 0)
-					AttachEntityToEntity(crash_ped_rear, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "boot"), 0.0, -1.8, 0.0, -90.0, 0.0, 0.0, false, false, false, true, 0, true)
 					Citizen.CreateThread(function()
 						while crash do
-							Wait(50)
-							DetachEntity(crash_ped_front, false, false)
-							DetachEntity(crash_ped_fl, false, false)
-							DetachEntity(crash_ped_fr, false, false)
-							if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) > 5.0) then
-								if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) < 16.0) then
-									AttachEntityToEntity(crash_ped_front, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "bonnet"), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / 2.0, 0.0, 90.0, 0.0, 0.0, false, false, false, true, 0, true)
-									AttachEntityToEntity(crash_ped_fl, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "headlight_l"), -0.8, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / 5.0, 0.0, 50.0, 90.0, 0.0, false, false, false, true, 0, true)
-									AttachEntityToEntity(crash_ped_fr, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "headlight_r"), 0.8, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / 5.0, 0.0, 50.0, -90.0, 0.0, false, false, false, true, 0, true)
-								else
-									AttachEntityToEntity(crash_ped_front, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "bonnet"), 0.0, 8.0, 0.0, 90.0, 0.0, 0.0, false, false, false, true, 0, true)
-									AttachEntityToEntity(crash_ped_fl, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "headlight_l"), -0.8, 3.0, 0.0, 50.0, 90.0, 0.0, false, false, false, true, 0, true)
-									AttachEntityToEntity(crash_ped_fr, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "headlight_r"), 0.8, 3.0, 0.0, 50.0, -90.0, 0.0, false, false, false, true, 0, true)
-								end
-							else
-								AttachEntityToEntity(crash_ped_front, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "bonnet"), 0.0, 3.5, 0.0, 90.0, 0.0, 0.0, false, false, false, true, 0, true)
-								AttachEntityToEntity(crash_ped_fl, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "headlight_l"), -0.8, 0.7, 0.0, 50.0, 90.0, 0.0, false, false, false, true, 0, true)
-								AttachEntityToEntity(crash_ped_fr, GetVehiclePedIsIn(GetPlayerPed(-1), false), GetEntityBoneIndexByName(GetVehiclePedIsIn(GetPlayerPed(-1), false), "headlight_r"), 0.8, 0.7, 0.0, 50.0, -90.0, 0.0, false, false, false, true, 0, true)
-							end
+							Wait(5)
 							if(IsPedInAnyVehicle(GetPlayerPed(-1), false)) then
-								if(IsAnyObjectNearPoint(GetEntityCoords(crash_ped_fl)["x"], GetEntityCoords(crash_ped_fl)["y"], GetEntityCoords(crash_ped_fl)["z"], 1.4, false)) then
-										if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false))) > 3.0 then
-											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 45)
-										else
-											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 8, 45)
+								if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) < 0.2) then -- standing
+									if(debug) then
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 1.5, false)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 23, 200)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 14, 200)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 13, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 1.5) or IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 23, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 14, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 13, 200)
+									end
+								elseif(GetVehicleCurrentGear(GetVehiclePedIsIn(GetPlayerPed(-1), false)) == 0) then -- reverse
+									if(debug) then
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).z, 1.5, false)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).z, 1.5, false)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 14, 200)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).z, 1.5, false)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 13, 200)
+									end
+									if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+									end
+									if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 14, 200)
+									end
+									if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 13, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 4.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 14, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 3.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 13, 200)
+									end
+									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) < 4.0) then
+										if(debug) then
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
 										end
-								end
-								if(IsAnyVehicleNearPoint(GetEntityCoords(crash_ped_fl)["x"], GetEntityCoords(crash_ped_fl)["y"], GetEntityCoords(crash_ped_fl)["z"], 1.4)) then
-									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false))) > 3.0 then
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 45)
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 1.5) or IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -3.5, 0.0).z, 1.5) or IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -3.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+									elseif(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) > 12.0) then
+										if(debug) then
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).z, 1.5) or IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -13.0, 0.0).z, 1.5) or IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -13.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
 									else
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 8, 45)
+										if(debug) then
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 255, 50, 50, 1.0, 10.0)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5) or IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5) or IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 200)
+										end
+									end
+								else -- normal
+									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) < 4.0) then
+										if(debug) then
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 3.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 2.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 2.5, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+									elseif(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) > 25.0) then
+										if(debug) then
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, 26.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, 25.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, 25.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+									else
+										if(debug) then
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 255, 50, 50, 1.0, 10.0)
+											DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 255, 50, 50, 1.0, 10.0)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).z, 1.5, false)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 0.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)), 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 22, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 200)
+										end
+										if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -2.0, GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false)) - 1.0, 0.0).z, 1.5)) then
+											TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 200)
+										end
+									end
+									if(debug) then
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+										DrawLightWithRange(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).z, 255, 50, 50, 1.0, 10.0)
+									end
+									if(IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).z, 1.5, false)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 9, 200)
+									end
+									if(IsAnyPedNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 9, 200)
+									end
+									if(IsAnyVehicleNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -4.5, 0.0).z, 1.5, false) or IsAnyObjectNearPoint(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -4.5, 0.0).z, 1.5)) then
+										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 9, 200)
 									end
 								end
-								--[[if(IsAnyPedNearPoint(GetEntityCoords(crash_ped_fl)["x"], GetEntityCoords(crash_ped_fl)["y"], GetEntityCoords(crash_ped_fl)["z"], 1.4)) then
-									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false))) > 3.0 then
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 5, 45)
-									else
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 8, 45)
-									end
-								end]]
-								if(IsAnyObjectNearPoint(GetEntityCoords(crash_ped_fr)["x"], GetEntityCoords(crash_ped_fr)["y"], GetEntityCoords(crash_ped_fr)["z"], 1.4, false)) then
-									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false))) > 3.0 then
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 45)
-									else
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 7, 45)
-									end
-								end
-								if(IsAnyVehicleNearPoint(GetEntityCoords(crash_ped_fr)["x"], GetEntityCoords(crash_ped_fr)["y"], GetEntityCoords(crash_ped_fr)["z"], 1.4)) then
-									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false))) > 3.0 then
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 45)
-									else
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 7, 45)
-									end
-								end
-								--[[if(IsAnyPedNearPoint(GetEntityCoords(crash_ped_fr)["x"], GetEntityCoords(crash_ped_fr)["y"], GetEntityCoords(crash_ped_fr)["z"], 1.4)) then
-									if(GetEntitySpeed(GetVehiclePedIsIn(GetPlayerPed(-1), false))) > 3.0 then
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 4, 45)
-									else
-										TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 7, 45)
-									end
-								end]]
-								if(IsAnyObjectNearPoint(GetEntityCoords(crash_ped_front)["x"], GetEntityCoords(crash_ped_front)["y"], GetEntityCoords(crash_ped_front)["z"], 3.0, false)) then
-									TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 45)
-								end
-								if(IsAnyVehicleNearPoint(GetEntityCoords(crash_ped_front)["x"], GetEntityCoords(crash_ped_front)["y"], GetEntityCoords(crash_ped_front)["z"], 3.0)) then
-									TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 45)
-								end
-								--[[if(IsAnyPedNearPoint(GetEntityCoords(crash_ped_front)["x"], GetEntityCoords(crash_ped_front)["y"], GetEntityCoords(crash_ped_front)["z"], 3.0)) then
-									TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 27, 45)
-								end]]
-								if(IsAnyObjectNearPoint(GetEntityCoords(crash_ped_rear)["x"], GetEntityCoords(crash_ped_rear)["y"], GetEntityCoords(crash_ped_rear)["z"], 2.5, false)) then
-									TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 23, 45)
-								end
-								if(IsAnyVehicleNearPoint(GetEntityCoords(crash_ped_rear)["x"], GetEntityCoords(crash_ped_rear)["y"], GetEntityCoords(crash_ped_rear)["z"], 2.5)) then
-									TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 23, 45)
-								end
-								--[[if(IsAnyPedNearPoint(GetEntityCoords(crash_ped_rear)["x"], GetEntityCoords(crash_ped_rear)["y"], GetEntityCoords(crash_ped_rear)["z"], 2.5)) then
-									TaskVehicleTempAction(GetPlayerPed(-1), GetVehiclePedIsIn(GetPlayerPed(-1), false), 23, 45)
-								end]]
 								if(HasEntityBeenDamagedByAnyObject(GetVehiclePedIsIn(GetPlayerPed(-1), false)) or HasEntityBeenDamagedByAnyVehicle(GetVehiclePedIsIn(GetPlayerPed(-1), false))) then
 									crash = false
 									minimap("Crash Avoidance canceled.")
-									--DeletePed(crash_ped_fl)
-									DeleteEntity(crash_ped_fl)
-									--DeletePed(crash_ped_fr)
-									DeleteEntity(crash_ped_fr)
-									--DeletePed(crash_ped_front)
-									DeleteEntity(crash_ped_front)
-									--DeletePed(crash_ped_rear)
-									DeleteEntity(crash_ped_rear)
 									ClearEntityLastDamageEntity(GetVehiclePedIsIn(GetPlayerPed(-1), false))
 								end
 							else
 								crash = false
-								minimap("Crash-Avoidance deactivated.")
-								--DeletePed(crash_ped_fl)
-								DeleteEntity(crash_ped_fl)
-								--DeletePed(crash_ped_fr)
-								DeleteEntity(crash_ped_fr)
-								--DeletePed(crash_ped_front)
-								DeleteEntity(crash_ped_front)
-								--DeletePed(crash_ped_rear)
-								DeleteEntity(crash_ped_rear)
+								minimap("Crash Avoidance deactivated.")
 							end
 						end
 					end)
@@ -244,6 +347,27 @@ RegisterCommand("tesla", function(source, args)
 							Wait(100)
 							SetVehicleDoorOpen(GetVehiclePedIsIn(GetPlayerPed(-1), false), math.random(0, 6), false, false)
 							SetVehicleDoorShut(GetVehiclePedIsIn(GetPlayerPed(-1), false), math.random(0, 6), false)
+						end
+					end)
+				end
+			elseif(args[1] == "lines") then
+				if(lines) then
+					minimap("Reverse lines deactivated.")
+					lines = false
+				else
+					minimap("Reverse lines activated.")
+					lines = true
+					Citizen.CreateThread(function()
+						while lines do
+							Wait(5)
+							if(IsPedInAnyVehicle(GetPlayerPed(-1)) and GetPedInVehicleSeat(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1) == GetPlayerPed(-1)) then
+								if(GetVehicleCurrentGear(GetVehiclePedIsIn(GetPlayerPed(-1), false)) == 0) then
+									DrawLine(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -2.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -2.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0, -2.0, 0.0).z, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0 - (GetVehicleSteeringAngle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / GetVehicleHandlingFloat(GetVehiclePedIsIn(GetPlayerPed(-1), false), "CHandlingData", "fSteeringLock")), -6.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0 - (GetVehicleSteeringAngle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / GetVehicleHandlingFloat(GetVehiclePedIsIn(GetPlayerPed(-1), false), "CHandlingData", "fSteeringLock")), -6.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), 1.0 - (GetVehicleSteeringAngle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / GetVehicleHandlingFloat(GetVehiclePedIsIn(GetPlayerPed(-1), false), "CHandlingData", "fSteeringLock")), -6.0, 0.0).z, 255, 255, 255, 255)
+									DrawLine(GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -2.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -2.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0, -2.0, 0.0).z, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0 - (GetVehicleSteeringAngle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / GetVehicleHandlingFloat(GetVehiclePedIsIn(GetPlayerPed(-1), false), "CHandlingData", "fSteeringLock")), -6.0, 0.0).x, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0 - (GetVehicleSteeringAngle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / GetVehicleHandlingFloat(GetVehiclePedIsIn(GetPlayerPed(-1), false), "CHandlingData", "fSteeringLock")), -6.0, 0.0).y, GetOffsetFromEntityInWorldCoords(GetVehiclePedIsIn(GetPlayerPed(-1), false), -1.0 - (GetVehicleSteeringAngle(GetVehiclePedIsIn(GetPlayerPed(-1), false)) / GetVehicleHandlingFloat(GetVehiclePedIsIn(GetPlayerPed(-1), false), "CHandlingData", "fSteeringLock")), -6.0, 0.0).z, 255, 255, 255, 255)
+								end
+							else
+								lines = false
+							end
 						end
 					end)
 				end
@@ -269,6 +393,7 @@ RegisterCommand("tesla", function(source, args)
 					minimap("Auto-Pilot activated.")
 					tesla_pilot = true
 					tesla_pilot_ped = CreatePed(0, 225514697, GetEntityCoords(tesla)["x"], GetEntityCoords(tesla)["y"], GetEntityCoords(tesla)["z"], 0.0, false, true)
+					SetEntityAsMissionEntity(tesla_pilot_ped, true, true)
 					SetPedIntoVehicle(tesla_pilot_ped, tesla, -1)
 					SetEntityInvincible(tesla_pilot_ped, true)
 					SetEntityVisible(tesla_pilot_ped, false, 0)

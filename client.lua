@@ -1,5 +1,5 @@
 --- START OF CONFIGURATION
-local vehicles = "ast,some,example,vehicle,models" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
+local vehicles = "" -- define what cars can be used as a tesla (by modelname), set to "" (empty) for all cars
 local debug = true
 --- END OF CONFIGURATION
 

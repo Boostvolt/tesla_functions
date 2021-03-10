@@ -7,8 +7,8 @@ FiveM Tesla vehicle functions.
 
 ## Chargeable cars
 - [Tesla Model S](https://github.com/boostvolt/tesla_models)
-- [Tesla Model X](https://github.com/boostvolt/tesla_modelx)
 - [Tesla Model 3](https://github.com/boostvolt/tesla_model3)
+- [Tesla Model X](https://github.com/boostvolt/tesla_modelx)
 - [Tesla Model Y](https://github.com/boostvolt/tesla_modely)
 - [Tesla Cybertruck](https://github.com/boostvolt/tesla_cybertruck)
 - [Tesla Roadster](https://github.com/boostvolt/tesla_roadster)

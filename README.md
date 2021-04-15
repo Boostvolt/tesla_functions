@@ -1,4 +1,4 @@
-# tesla_functions
+# playlolly_tesla_functions
 FiveM Tesla vehicle functions.
 - **/tesla mark**: Marks your vehicle as your Tesla and creates a blip on the map. This vehicle will be used for commands executed while not being in a vehicle as driver.
 - **/tesla pilot**: Makes your vehicle drive to your waypoint autonomous. Execute again to cancel.
